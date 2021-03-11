@@ -48,11 +48,11 @@ def collect_citation_reports(wos_indexes, wos_result_types, wos_selected_index, 
     for sf in WOS_SEARCH_YEARS:
         # Abre página inicial
         driver.get('https://apps.webofknowledge.com/')
-        WebDriverWait(driver, 200)
+        sleep(3)
 
         # Abre aba de busca avançada
         driver.find_element_by_link_text('Advanced Search').click()
-        WebDriverWait(driver, 200)
+        sleep(3)
 
         # Adiciona dados de pesquisa no campo de busca
         driver.find_element_by_class_name('Adv_formBoxesSearch').clear()
@@ -66,7 +66,7 @@ def collect_citation_reports(wos_indexes, wos_result_types, wos_selected_index, 
 
         # Expande menu de mais configurações
         driver.find_element_by_id('settings-arrow').click()
-        WebDriverWait(driver, 100)
+        sleep(3)
 
         # Ativa índice de busca desejado
         for wi in wos_indexes:
@@ -80,15 +80,15 @@ def collect_citation_reports(wos_indexes, wos_result_types, wos_selected_index, 
 
         # Faz busca
         driver.find_element_by_id('search-button').click()
-        WebDriverWait(driver, 1000)
+        sleep(3)
 
         # Acessa página de resultados
         driver.find_element_by_class_name('historyResults').find_element_by_tag_name('a').click()
-        WebDriverWait(driver, 1000)
+        sleep(3)
 
         # Acessa página de análise de resultados
         driver.find_element_by_class_name('create-cite-report').find_element_by_tag_name('a').click()
-        WebDriverWait(driver, 3000)
+        sleep(3)
 
         # Acessa página de Source Titles e Book Series Titles
         for ca in WOS_CIT_ANALYSIS_NAMES:
