@@ -2,16 +2,18 @@ import argparse
 import os
 import re
 import shutil
-from time import sleep
 
 from selenium import webdriver
-from selenium.webdriver.support.wait import WebDriverWait
+from time import sleep
 
 
 CHROME_DRIVER_PATH = os.environ.get('CHROME_DRIVER_PATH', '/home/rafaeljpd/Downloads/visibility/bin/chromedriver')
 CHROME_DOWNLOAD_DIR = os.environ.get('CHROME_DOWNLOAD_DIR', '/home/rafaeljpd/Downloads/visibility/data/selenium')
 PATTERN_YEAR = r'\d{4}'
 WOS_CIT_ANALYSIS_NAMES = ['SO_SourceTitle_SourceTitle_en', 'SE_BookSeries_BookSeries_en']
+WOS_MIN_WAIT_TIME = 1
+WOS_MID_WAIT_TIME = 5
+WOS_MAX_WAIT_TIME = 10
 WOS_SEARCH_YEARS = ['PY=' + str(year) for year in range(1997, 2020)]
 
 
@@ -48,11 +50,11 @@ def collect_citation_reports(wos_indexes, wos_result_types, wos_selected_index, 
     for sf in WOS_SEARCH_YEARS:
         # Abre página inicial
         driver.get('https://apps.webofknowledge.com/')
-        sleep(3)
+        sleep(WOS_MIN_WAIT_TIME)
 
         # Abre aba de busca avançada
         driver.find_element_by_link_text('Advanced Search').click()
-        sleep(3)
+        sleep(WOS_MID_WAIT_TIME)
 
         # Adiciona dados de pesquisa no campo de busca
         driver.find_element_by_class_name('Adv_formBoxesSearch').clear()
@@ -66,7 +68,7 @@ def collect_citation_reports(wos_indexes, wos_result_types, wos_selected_index, 
 
         # Expande menu de mais configurações
         driver.find_element_by_id('settings-arrow').click()
-        sleep(3)
+        sleep(WOS_MIN_WAIT_TIME)
 
         # Ativa índice de busca desejado
         for wi in wos_indexes:
@@ -80,7 +82,7 @@ def collect_citation_reports(wos_indexes, wos_result_types, wos_selected_index, 
 
         # Faz busca
         driver.find_element_by_id('search-button').click()
-        sleep(3)
+        sleep(WOS_MIN_WAIT_TIME)
 
         # Acessa página de resultados
         driver.find_element_by_class_name('historyResults').find_element_by_tag_name('a').click()
