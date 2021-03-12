@@ -1,4 +1,5 @@
 import argparse
+import csv
 import os
 import re
 import shutil
@@ -23,24 +24,41 @@ def get_params():
     parser.add_argument('-i', '--indexes', default='SCI,SSCI,AHCI,ISTP,ISSHP,ESCI')
     parser.add_argument('-s', '--selected_index', default='AHCI')
     parser.add_argument('-r', '--result_types', default='Article,Review')
+    parser.add_argument('-t', '--source_titles', default='')
 
     params = parser.parse_args()
 
     return {'mode': params.mode,
             'indexes': params.indexes,
             'selected_index': params.selected_index,
-            'result_types': params.result_types}
+            'result_types': params.result_types,
+            'source_titles': params.source_titles}
 
 
-def collect_citation_reports(wos_indexes, wos_result_types, wos_selected_index, results_dir):
-    # Inicializa navegador
+def read_source_titles(path_source_titles):
+    st = set()
+
+    with open(path_source_titles) as f:
+        csv_reader = csv.DictReader(f, delimiter='\t')
+        for row in csv_reader:
+            st.add(row['Source'])
+
+    return st
+
+
+def start_driver():
+    if not os.path.exists(CHROME_DOWNLOAD_DIR):
+        os.makedirs(CHROME_DOWNLOAD_DIR)
+
     chrome_options = webdriver.ChromeOptions()
     prefs = {'download.default_directory': CHROME_DOWNLOAD_DIR}
     chrome_options.add_experimental_option('prefs', prefs)
-    driver = webdriver.Chrome(executable_path=CHROME_DRIVER_PATH, chrome_options=chrome_options)
 
-    if not os.path.exists(CHROME_DOWNLOAD_DIR):
-        os.makedirs(CHROME_DOWNLOAD_DIR)
+    return webdriver.Chrome(executable_path=CHROME_DRIVER_PATH, chrome_options=chrome_options)
+
+
+def collect_citation_reports(wos_indexes, wos_result_types, wos_selected_index, results_dir):
+    driver = start_driver()
 
     for sf in WOS_SEARCH_YEARS:
         # Abre página inicial
@@ -108,6 +126,11 @@ def collect_citation_reports(wos_indexes, wos_result_types, wos_selected_index, 
                 shutil.move(filename, os.path.join(results_dir, '%s-%s.txt' % (cat, year)))
 
 
+def collect_issn_for_sources(source_titles):
+    driver = start_driver()
+    # ToDo: implementar obtenção de ISSN a partir de query baseada em SO=(st)
+
+
 if __name__ == '__main__':
     params = get_params()
 
@@ -122,3 +145,8 @@ if __name__ == '__main__':
 
     if wm == 'collect':
         collect_citation_reports(wos_indexes=wis, wos_result_types=wrt, wos_selected_index=wsi, results_dir=result_wsi_path)
+
+    if wm == 'issn':
+        if params['source_titles']:
+            st = read_source_titles(params['source_titles'])
+            collect_issn_for_sources(source_titles=st)
