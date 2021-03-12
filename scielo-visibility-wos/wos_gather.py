@@ -17,11 +17,6 @@ WOS_MAX_WAIT_TIME = 10
 WOS_SEARCH_YEARS = ['PY=' + str(year) for year in range(1997, 2020)]
 
 
-# def detail(text):
-#     detailed_query = 'AND SO=(%s))' % text
-#     return detailed_query
-
-
 def get_params():
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--mode', default='collect')
