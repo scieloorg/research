@@ -32,12 +32,15 @@ Sugere-se definir também a variável de ambiente CHROME_DOWNLOAD_DIR. Consulte 
 
 __Parâmetros de linha de comando__
 
-| Parâmetro | Descrição | Padrão | Como usar |
-|-----------|-----------|--------|-----------|
-| WOS_INDEXES | Um lista de siglas que representam os core-indexes WoS | SCI,SSCI,AHCI,ISTP,ISSHP,ESCI | `-i SCI,SSCI,AHCI,ISTP,ISSHP,ESCI` 
-| WOS_RESULT_TYPES | Uma lista dos tipos de resultados a serem filtrados | Article,Review | `-r Article,Review` |
-| WOS_SELECTED_INDEX | O índice a ser tratado (uma das siglas indicadas em WOS_INDEXES) | AHCI | `-s AHCI` |
-| GATHER_MODE | Modo de uso da aplicação (e.g. collect ou issn) | collect | `-m collect `  
+| Parâmetro | Descrição | Padrão |
+|-----------|-----------|--------|
+| `-i` ou `--indexes` | Um lista de siglas que representam os core-indexes WoS | SCI,SSCI,AHCI,ISTP,ISSHP,ESCI | 
+| `-r` or `--result_types` | Uma lista dos tipos de resultados a serem filtrados | Article,Review |
+| `-s` ou `--selected_index`| O índice a ser tratado (uma das siglas indicadas em WOS_INDEXES) | AHCI | 
+| `-m` ou `--mode` | Modo de uso da aplicação (e.g. collect ou issn) | collect |
+| `-c` ou `--core_titles` | Arquivo CSV Master Journal List com Source Titles e ISSNs | vazio |
+| `-d` ou `--source_titles` | Diretório com dados de análise coletados por meio de `wos_gather.py -m collect` | vazio |
+| `-b` ou `--base_titles` | Arquivo CSV com dados títulos de periódicos, ISSN e país | vazio |
 
 ## Uso
 
@@ -59,6 +62,9 @@ python wos_gather.py
 #   core SSCI
 #   considerando tipos de resultados Article e Review
 python wos_gather.py -m collect -i SSCI -r Article,Review
+
+# Associar periódicos que constam na análise de resultados a seus respectivos ISSNs
+python wos_gather.py -m issn -i AHCI -d /data/ahci/results -c /data/ahci/wos-core-ahci2020.csv -b /data/base_issnl2all_v0.5.csv
 ```
 
 
