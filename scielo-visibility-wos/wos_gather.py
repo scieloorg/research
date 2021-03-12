@@ -8,11 +8,12 @@ import shutil
 from selenium import webdriver
 from time import sleep
 
+from selenium.common.exceptions import NoSuchElementException
 
 CHROME_DRIVER_PATH = os.environ.get('CHROME_DRIVER_PATH', '/home/rafaeljpd/Downloads/visibility/bin/chromedriver')
 CHROME_DOWNLOAD_DIR = os.environ.get('CHROME_DOWNLOAD_DIR', '/home/rafaeljpd/Downloads/visibility/data/selenium')
 LOGGING_LEVEL = os.environ.get('LOGGING_LEVEL', 'INFO')
-HEADER_RESULT_FILE = '|'.join(['Source Title', 'Records', 'Year', 'ISSN', 'eISSN', 'Country'])
+HEADER_RESULT_FILE = '|'.join(['Source Title', 'Records', 'Year', 'ISSN', 'eISSN', 'Country', 'WoS-ISSN', 'WoS-Base-Country'])
 PATTERN_YEAR = r'\d{4}'
 WOS_CIT_ANALYSIS_NAMES = ['SO_SourceTitle_SourceTitle_en', 'SE_BookSeries_BookSeries_en']
 WOS_MIN_WAIT_TIME = 1
@@ -203,7 +204,7 @@ def collect_citation_reports(wos_indexes, wos_result_types, wos_selected_index, 
 
 
 def enrich_issn_for_sources(source_titles, core_titles, base_titles):
-    enriched_data = []
+    enriched_data = {}
 
     for s in source_titles:
         title = s[0]
@@ -211,6 +212,8 @@ def enrich_issn_for_sources(source_titles, core_titles, base_titles):
         year = s[2]
         issn, eissn = core_titles.get(title, ('', ''))
         countries = ''
+
+        ed_key = '|'.join([title, year])
 
         if not issn and not eissn:
             bissns = base_titles['title2issns'].get(title, set())
@@ -230,7 +233,7 @@ def enrich_issn_for_sources(source_titles, core_titles, base_titles):
                         countries.add(iv)
                 countries = '#'.join(countries)
 
-        enriched_data.append([title, records, year, issn, eissn, countries])
+        enriched_data[ed_key] = [title, records, year, issn, eissn, countries]
 
     return enriched_data
 
@@ -238,14 +241,117 @@ def enrich_issn_for_sources(source_titles, core_titles, base_titles):
 def save(gold_data):
     with open('gold_data.csv', 'w') as f:
         f.write(HEADER_RESULT_FILE + '\n')
-        for gd in gold_data:
-            f.write('|'.join(gd) + '\n')
+        for v in gold_data.values():
+            f.write('|'.join(v) + '\n')
 
 
-def collect_issn(enriched_data):
-    # ToDo: implementar obtenção de ISSN a partir de query baseada em SO=(st)
-    # driver = start_driver()
-    return enriched_data
+def get_source_titles_no_issn(enriched_data):
+    st_no_issn = {}
+
+    for v in enriched_data.values():
+        source_title = v[0]
+        year = v[2]
+        issn = v[3]
+        eissn = v[4]
+        country = v[5]
+
+        if country == '':
+            if (not issn and not eissn) or '#' in issn:
+                if source_title not in st_no_issn:
+                    st_no_issn[source_title] = []
+                st_no_issn[source_title].append(year)
+
+    return st_no_issn
+
+
+def collect_issn(enriched_data, wos_result_types):
+    results = {}
+
+    sts = get_source_titles_no_issn(enriched_data)
+    logging.info('Há %d periódicos com título válido e sem ISSN definido' % len(sts))
+
+    driver = start_driver()
+
+    for k in sorted(sts.keys()):
+        # Abre página inicial
+        driver.get('https://apps.webofknowledge.com/')
+        sleep(WOS_MIN_WAIT_TIME)
+
+        # Abre aba de busca avançada
+        driver.find_element_by_link_text('Advanced Search').click()
+        sleep(WOS_MIN_WAIT_TIME)
+
+        # Adiciona dados de pesquisa no campo de busca
+        search_text = 'PY=' + sts[k][0] + ' AND SO=({0})'.format(k)
+        driver.find_element_by_class_name('Adv_formBoxesSearch').clear()
+        driver.find_element_by_class_name('Adv_formBoxesSearch').send_keys(search_text)
+
+        # Seleciona tipo de resultado Article e Review
+        for rt in wos_result_types:
+            rti = driver.find_element_by_xpath("//select[@name='value(input3)']/option[text()='%s']" % rt)
+            if not rti.is_selected():
+                rti.click()
+
+        # Expande menu de mais configurações
+        driver.find_element_by_id('settings-arrow').click()
+        sleep(WOS_MIN_WAIT_TIME)
+
+        # Ativa índice de busca desejado
+        for wi in wos_indexes:
+            checkbox = driver.find_element_by_id(wi)
+            if wi != wos_selected_index:
+                if checkbox.is_selected():
+                    checkbox.click()
+            else:
+                if not checkbox.is_selected():
+                    checkbox.click()
+
+        # Faz busca
+        driver.find_element_by_id('search-button').click()
+        sleep(WOS_MIN_WAIT_TIME)
+
+        # Acessa página de resultados
+        history_results = driver.find_element_by_class_name('historyResults')
+        if history_results.text != '0':
+            history_results.find_element_by_tag_name('a').click()
+            sleep(WOS_MIN_WAIT_TIME)
+
+            # Acessa página do primeiro resultado
+            driver.find_element_by_id('RECORD_1').find_element_by_tag_name('a').click()
+            sleep(WOS_MIN_WAIT_TIME)
+
+            # Abre mais informações
+            try:
+                driver.find_element_by_link_text('See more data fields').click()
+            except NoSuchElementException:
+                pass
+
+            # Procura ISSN
+            for i in driver.find_elements_by_xpath("//p[@class='FR_field']"):
+                if 'ISSN' in i.text:
+                    issn = i.text.split(': ')[-1]
+                    if issn:
+                        results[k] = issn
+
+    return results
+
+
+def merge(enriched_data, issn_data, base_titles):
+    for k, v in enriched_data.items():
+        source_title, year = k.split('|')
+        if source_title in issn_data:
+            issn = issn_data[source_title]
+            enriched_data[k].append(issn)
+
+            if '#' not in issn and len(issn) == 9:
+                countries = '#'.join(base_titles['issn2countries'].get(issn, []))
+                if countries:
+                    enriched_data[k].append(countries)
+                else:
+                    enriched_data[k].append('-')
+        else:
+            enriched_data[k].append('-')
+            enriched_data[k].append('-')
 
 
 if __name__ == '__main__':
@@ -255,15 +361,15 @@ if __name__ == '__main__':
                         format='[%(asctime)s] %(levelname)s %(message)s',
                         datefmt='%d/%b/%Y %H:%M:%S')
 
+    wos_result_types = [rt.title() for rt in params['result_types'].split(',')]
+    wos_indexes = ['editionitem' + s.upper() for s in params['indexes'].split(',')]
+    wos_selected_index = 'editionitem' + params['selected_index'].upper()
+
+    result_wsi_path = os.path.join(CHROME_DOWNLOAD_DIR, wos_selected_index.replace('editionitem', '').lower())
+    if not os.path.exists(result_wsi_path):
+        os.makedirs(result_wsi_path)
+
     if params['mode'] == 'collect':
-        wos_indexes = ['editionitem' + s.upper() for s in params['indexes'].split(',')]
-        wos_result_types = [rt.title() for rt in params['result_types'].split(',')]
-        wos_selected_index = 'editionitem' + params['selected_index'].upper()
-
-        result_wsi_path = os.path.join(CHROME_DOWNLOAD_DIR, wos_selected_index.replace('editionitem', '').lower())
-        if not os.path.exists(result_wsi_path):
-            os.makedirs(result_wsi_path)
-
         collect_citation_reports(wos_indexes=wos_indexes, wos_result_types=wos_result_types, wos_selected_index=wos_selected_index, results_dir=result_wsi_path)
 
     if params['mode'] == 'issn':
@@ -282,7 +388,10 @@ if __name__ == '__main__':
             enri_data = enrich_issn_for_sources(source_titles=source_titles, core_titles=core_titles, base_titles=base_titles)
 
             logging.info('Coletando ISSNs do site WoS...')
-            gold_data = collect_issn(enriched_data=enri_data)
+            issn_data = collect_issn(enriched_data=enri_data, wos_result_types=wos_result_types)
+
+            logging.info('Mesclando ISSNs em Source Titles...')
+            merge(enri_data, issn_data, base_titles)
 
             logging.info('Salvando resultados...')
-            save(gold_data)
+            save(enri_data)
