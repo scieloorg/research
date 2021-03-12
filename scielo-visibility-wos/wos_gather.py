@@ -80,30 +80,32 @@ def collect_citation_reports(wos_indexes, wos_result_types, wos_selected_index, 
         sleep(WOS_MIN_WAIT_TIME)
 
         # Acessa página de resultados
-        driver.find_element_by_class_name('historyResults').find_element_by_tag_name('a').click()
-        sleep(3)
+        history_results = driver.find_element_by_class_name('historyResults')
+        if history_results.text != '0':
+            history_results.find_element_by_tag_name('a').click()
+            sleep(WOS_MAX_WAIT_TIME * 2)
 
-        # Acessa página de análise de resultados
-        driver.find_element_by_class_name('create-cite-report').find_element_by_tag_name('a').click()
-        sleep(3)
+            # Acessa página de análise de resultados
+            driver.find_element_by_class_name('create-cite-report').find_element_by_tag_name('a').click()
+            sleep(WOS_MAX_WAIT_TIME)
 
-        # Acessa página de Source Titles e Book Series Titles
-        for ca in WOS_CIT_ANALYSIS_NAMES:
-            driver.find_element_by_xpath("//button[@value='%s']" % ca).click()
+            # Acessa página de Source Titles e Book Series Titles
+            for ca in WOS_CIT_ANALYSIS_NAMES:
+                driver.find_element_by_xpath("//button[@value='%s']" % ca).click()
 
-            # Ativa campo para salvar todos os dados disponíveis
-            driver.find_element_by_id('save_what_all_bottom').click()
+                # Ativa campo para salvar todos os dados disponíveis
+                driver.find_element_by_id('save_what_all_bottom').click()
 
-            # Salva arquivo em disco
-            driver.find_element_by_id('save').click()
-            sleep(5)
+                # Salva arquivo em disco
+                driver.find_element_by_id('save').click()
+                sleep(WOS_MIN_WAIT_TIME)
 
-            # Renomeia arquivo
-            year = re.search(PATTERN_YEAR, sf).group()
-            cat = 'book' if 'book' in ca.lower() else 'source'
+                # Renomeia arquivo
+                year = re.search(PATTERN_YEAR, sf).group()
+                cat = 'book' if 'book' in ca.lower() else 'source'
 
-            filename = max([os.path.join(CHROME_DOWNLOAD_DIR, f) for f in os.listdir(CHROME_DOWNLOAD_DIR) if 'analyze' in f], key=os.path.getctime)
-            shutil.move(filename, os.path.join(results_dir, '%s-%s.txt' % (cat, year)))
+                filename = max([os.path.join(CHROME_DOWNLOAD_DIR, f) for f in os.listdir(CHROME_DOWNLOAD_DIR) if 'analyze' in f], key=os.path.getctime)
+                shutil.move(filename, os.path.join(results_dir, '%s-%s.txt' % (cat, year)))
 
 
 if __name__ == '__main__':
