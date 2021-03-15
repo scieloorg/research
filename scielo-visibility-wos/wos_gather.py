@@ -268,6 +268,10 @@ def get_source_titles_no_issn(enriched_data):
 
 def collect_issn(enriched_data, wos_result_types):
     results = {}
+    if not os.path.exists('source_issn_data.csv'):
+        output = open('source_issn_data.csv', 'w')
+    else:
+        output = open('source_issn_data.csv', 'a')
 
     sts = get_source_titles_no_issn(enriched_data)
     logging.info('Há %d periódicos com título válido e sem ISSN definido' % len(sts))
