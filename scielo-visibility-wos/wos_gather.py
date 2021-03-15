@@ -266,7 +266,7 @@ def get_source_titles_no_issn(enriched_data):
     return st_no_issn
 
 
-def collect_issn(enriched_data, wos_result_types):
+def collect_issn(enriched_data, wos_result_types, start_line):
     results = {}
     if not os.path.exists('source_issn_data.csv'):
         output = open('source_issn_data.csv', 'w')
@@ -278,66 +278,81 @@ def collect_issn(enriched_data, wos_result_types):
 
     driver = start_driver()
 
-    for k in sorted(sts.keys()):
-        # Abre página inicial
-        driver.get('https://apps.webofknowledge.com/')
-        sleep(WOS_MIN_WAIT_TIME)
+    for index, k in enumerate(sorted(sts.keys())[start_line:]):
+        logging.info('Coletando para %d de %d' % (index + 1 + start_line, len(sts)))
 
-        # Abre aba de busca avançada
-        driver.find_element_by_link_text('Advanced Search').click()
-        sleep(WOS_MIN_WAIT_TIME)
-
-        # Adiciona dados de pesquisa no campo de busca
-        search_text = 'PY=' + sts[k][0] + ' AND SO=({0})'.format(k)
-        driver.find_element_by_class_name('Adv_formBoxesSearch').clear()
-        driver.find_element_by_class_name('Adv_formBoxesSearch').send_keys(search_text)
-
-        # Seleciona tipo de resultado Article e Review
-        for rt in wos_result_types:
-            rti = driver.find_element_by_xpath("//select[@name='value(input3)']/option[text()='%s']" % rt)
-            if not rti.is_selected():
-                rti.click()
-
-        # Expande menu de mais configurações
-        driver.find_element_by_id('settings-arrow').click()
-        sleep(WOS_MIN_WAIT_TIME)
-
-        # Ativa índice de busca desejado
-        for wi in wos_indexes:
-            checkbox = driver.find_element_by_id(wi)
-            if wi != wos_selected_index:
-                if checkbox.is_selected():
-                    checkbox.click()
-            else:
-                if not checkbox.is_selected():
-                    checkbox.click()
-
-        # Faz busca
-        driver.find_element_by_id('search-button').click()
-        sleep(WOS_MIN_WAIT_TIME)
-
-        # Acessa página de resultados
-        history_results = driver.find_element_by_class_name('historyResults')
-        if history_results.text != '0':
-            history_results.find_element_by_tag_name('a').click()
+        try:
+            # Abre página inicial
+            driver.get('https://apps.webofknowledge.com/')
             sleep(WOS_MIN_WAIT_TIME)
 
-            # Acessa página do primeiro resultado
-            driver.find_element_by_id('RECORD_1').find_element_by_tag_name('a').click()
+            # Abre aba de busca avançada
+            driver.find_element_by_link_text('Advanced Search').click()
+
+            # Adiciona dados de pesquisa no campo de busca
+            search_text = 'PY=' + sts[k][0] + ' AND SO=({0})'.format(k)
+            driver.find_element_by_class_name('Adv_formBoxesSearch').clear()
+            driver.find_element_by_class_name('Adv_formBoxesSearch').send_keys(search_text)
+
+            # Seleciona tipo de resultado Article e Review
+            for rt in wos_result_types:
+                rti = driver.find_element_by_xpath("//select[@name='value(input3)']/option[text()='%s']" % rt)
+                if not rti.is_selected():
+                    rti.click()
+
+            # Expande menu de mais configurações
+            driver.find_element_by_id('settings-arrow').click()
+
+            # Ativa índice de busca desejado
+            for wi in wos_indexes:
+                checkbox = driver.find_element_by_id(wi)
+                if wi != wos_selected_index:
+                    if checkbox.is_selected():
+                        checkbox.click()
+                else:
+                    if not checkbox.is_selected():
+                        checkbox.click()
+
+            # Faz busca
+            driver.find_element_by_id('search-button').click()
             sleep(WOS_MIN_WAIT_TIME)
 
-            # Abre mais informações
+            # Limpa história para evitar limite de 200 itens
             try:
-                driver.find_element_by_link_text('See more data fields').click()
+                driver.find_element_by_id('deleteSets2')
+                driver.find_element_by_id('deleteSets1').click()
+                driver.find_element_by_id('deleteBtm').click()
             except NoSuchElementException:
                 pass
 
-            # Procura ISSN
-            for i in driver.find_elements_by_xpath("//p[@class='FR_field']"):
-                if 'ISSN' in i.text:
-                    issn = i.text.split(': ')[-1]
-                    if issn:
-                        results[k] = issn
+            # Acessa página de resultados
+            history_results = driver.find_element_by_class_name('historyResults')
+            if history_results.text != '0':
+                history_results.find_element_by_tag_name('a').click()
+                sleep(WOS_MIN_WAIT_TIME)
+
+                # Acessa página do primeiro resultado
+                driver.find_element_by_id('RECORD_1').find_element_by_tag_name('a').click()
+                sleep(WOS_MIN_WAIT_TIME)
+
+                # Abre mais informações
+                try:
+                    driver.find_element_by_link_text('See more data fields').click()
+                except NoSuchElementException:
+                    pass
+
+                # Procura ISSN
+                for i in driver.find_elements_by_xpath("//p[@class='FR_field']"):
+                    if 'ISSN' in i.text:
+                        issn = i.text.split(': ')[-1]
+                        if issn:
+                            results[k] = issn
+                            output.write('\t'.join([str(index + start_line), k, issn]) + '\n')
+                            output.flush()
+        except NoSuchElementException:
+            logging.error('%s was not collected' % k)
+
+    output.close()
 
     return results
 
