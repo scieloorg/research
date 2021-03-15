@@ -31,6 +31,7 @@ def get_params():
     parser.add_argument('-c', '--core_titles', default='')
     parser.add_argument('-t', '--source_titles', default='')
     parser.add_argument('-b', '--base_titles', default='')
+    parser.add_argument('--start_line', type=int, default=0)
 
     params = parser.parse_args()
 
@@ -40,7 +41,8 @@ def get_params():
             'result_types': params.result_types,
             'core_titles': params.core_titles,
             'source_titles': params.source_titles,
-            'base_titles': params.base_titles}
+            'base_titles': params.base_titles,
+            'start_line': params.start_line}
 
 
 def fix_issn(issn):
@@ -388,7 +390,7 @@ if __name__ == '__main__':
             enri_data = enrich_issn_for_sources(source_titles=source_titles, core_titles=core_titles, base_titles=base_titles)
 
             logging.info('Coletando ISSNs do site WoS...')
-            issn_data = collect_issn(enriched_data=enri_data, wos_result_types=wos_result_types)
+            issn_data = collect_issn(enriched_data=enri_data, wos_result_types=wos_result_types, start_line=params['start_line'])
 
             logging.info('Mesclando ISSNs em Source Titles...')
             merge(enri_data, issn_data, base_titles)
