@@ -239,8 +239,10 @@ def enrich_issn_for_sources(source_titles, core_titles, base_titles):
     return enriched_data
 
 
-def save(gold_data):
-    with open('gold_data.csv', 'w') as f:
+def save(gold_data, wos_selected_index):
+    gd_path = 'gold_data_{0}.csv'.format(wos_selected_index).replace('editionitem', '').lower()
+
+    with open(gd_path, 'w') as f:
         f.write(HEADER_RESULT_FILE + '\n')
         for v in gold_data.values():
             f.write('|'.join(v) + '\n')
