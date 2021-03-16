@@ -3,12 +3,11 @@ import csv
 import logging
 import os
 import re
-import shutil
-
 from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException
+import shutil
 from time import sleep
 
-from selenium.common.exceptions import NoSuchElementException
 
 CHROME_DRIVER_PATH = os.environ.get('CHROME_DRIVER_PATH', '/home/rafaeljpd/Downloads/visibility/bin/chromedriver')
 CHROME_DOWNLOAD_DIR = os.environ.get('CHROME_DOWNLOAD_DIR', '/home/rafaeljpd/Downloads/visibility/data/selenium')
