@@ -267,12 +267,14 @@ def get_source_titles_no_issn(enriched_data):
     return st_no_issn
 
 
-def collect_issn(enriched_data, wos_result_types, start_line):
+def collect_issn(enriched_data, wos_result_types, start_line, wos_selected_index):
     results = {}
-    if not os.path.exists('source_issn_data.csv'):
-        output = open('source_issn_data.csv', 'w')
+    sid_path = 'source_issn_data_{0}.csv'.format(wos_selected_index).replace('editionitem', '').lower()
+
+    if not os.path.exists(sid_path):
+        output = open(sid_path, 'w')
     else:
-        output = open('source_issn_data.csv', 'a')
+        output = open(sid_path, 'a')
 
     sts = get_source_titles_no_issn(enriched_data)
     logging.info('Há %d periódicos com título válido e sem ISSN definido' % len(sts))
@@ -410,7 +412,7 @@ if __name__ == '__main__':
             enri_data = enrich_issn_for_sources(source_titles=source_titles, core_titles=core_titles, base_titles=base_titles)
 
             logging.info('Coletando ISSNs do site WoS...')
-            issn_data = collect_issn(enriched_data=enri_data, wos_result_types=wos_result_types, start_line=params['start_line'])
+            issn_data = collect_issn(enriched_data=enri_data, wos_result_types=wos_result_types, start_line=params['start_line'], wos_selected_index=wos_selected_index)
 
             logging.info('Mesclando ISSNs em Source Titles...')
             merge(enri_data, issn_data, base_titles)
