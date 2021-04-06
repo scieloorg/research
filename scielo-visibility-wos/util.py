@@ -110,7 +110,7 @@ def read_source_title_years(path_source_title_years):
         csv_reader = csv.DictReader(f, fieldnames=['Source Title', 'Years'], delimiter='\t')
         for row in csv_reader:
             source_title = row.get('Source Title')
-            years = row.get('Years').split('#')
+            years = row.get('Years', '').split('#')
 
             results[source_title] = years
 
