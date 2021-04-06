@@ -38,6 +38,8 @@ class WosEnricher:
 
     def save_source_title_years(self):
         no_issn, multiple_issn = self.get_problematic_source_titles()
+    def save_problematic_sources_titles_years(self):
+        no_issn, multiple_issn = self._get_problematic_source_titles()
         data = {'no_issn': no_issn, 'multiple_issn': multiple_issn}
 
         for i in data:
@@ -46,7 +48,7 @@ class WosEnricher:
                     years = data[i][source_title]
                     f.write('\t'.join([source_title, '#'.join(years)]) + '\n')
 
-    def get_problematic_source_titles(self):
+    def _get_problematic_source_titles(self):
         st_no_issn = {}
         st_multiple_issn = {}
 

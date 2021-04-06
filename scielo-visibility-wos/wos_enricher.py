@@ -42,4 +42,4 @@ if __name__ == '__main__':
     enricher.enrich_source_titles()
 
     logging.info('Salvando dados...')
-    enricher.save_source_title_years()
+    enricher.save_problematic_sources_titles_years()
