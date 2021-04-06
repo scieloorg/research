@@ -6,7 +6,7 @@ class WosEnricher:
         self.results = {}
         self.index = index
 
-    def enrich_source_title(self):
+    def enrich_source_titles(self, wos_title_to_issn=None):
         for s in self.source_titles:
             title = s[0]
             records = s[1]

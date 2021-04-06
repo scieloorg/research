@@ -39,7 +39,7 @@ if __name__ == '__main__':
     enricher.base_titles = {'title2issns': t2i, 'issn2countries': i2c}
 
     logging.info('Enriquecendo dados...')
-    enricher.enrich_source_title()
+    enricher.enrich_source_titles()
 
     logging.info('Salvando dados...')
     enricher.save_source_title_years()
