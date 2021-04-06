@@ -36,8 +36,20 @@ class WosEnricher:
 
             self.results[ed_key] = [title, records, year, issn, eissn, countries]
 
-    def save_source_title_years(self):
-        no_issn, multiple_issn = self.get_problematic_source_titles()
+        if wos_title_to_issn:
+            for k, v in self.results.items():
+                journal_title = v[0]
+
+                wos_issns = wos_title_to_issn.get(journal_title, [])
+                self.results[k].append('#'.join(wos_issns))
+
+                wos_countries = set()
+                for wi in wos_issns:
+                    for wv in self.base_titles['issn2countries'].get(wi, []):
+                        wos_countries.add(wv)
+
+                self.results[k].append('#'.join(wos_countries))
+
     def save_problematic_sources_titles_years(self):
         no_issn, multiple_issn = self._get_problematic_source_titles()
         data = {'no_issn': no_issn, 'multiple_issn': multiple_issn}
