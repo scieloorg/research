@@ -124,3 +124,21 @@ def save_wos_issns(source_title_issns, wos_selected_index, results_directory):
         for st, issns in source_title_issns.items():
             for i in issns:
                 f.write('\t'.join([st, i]) + '\n')
+
+
+def read_wos_gathered_issns(path_gathered_file):
+    title_to_issn = {}
+
+    with open(path_gathered_file) as f:
+        csv_reader = csv.DictReader(f, fieldnames=['id', 'title', 'issn'], delimiter='\t')
+        for row in csv_reader:
+            title = row['title']
+            issn = row['issn']
+
+            if title not in title_to_issn:
+                title_to_issn[title] = []
+
+            if issn not in title_to_issn[title]:
+                title_to_issn[title].append(issn)
+
+    return title_to_issn
