@@ -86,25 +86,7 @@ class WosEnricher:
             result_dict[source_title] = []
         result_dict[source_title].append(st_year)
 
-    # def merge(self, issn_data, base_titles):
-    #     for k, v in self.results.items():
-    #         source_title, year = k.split('|')
-    #
-    #         if source_title in issn_data:
-    #             issn = issn_data[source_title][0]
-    #             self.results[k].append(issn)
-    #
-    #             if '#' not in issn and len(issn) == 9:
-    #                 countries = '#'.join(base_titles['issn2countries'].get(issn, []))
-    #                 if countries:
-    #                     self.results[k].append(countries)
-    #                 else:
-    #                     self.results[k].append('-')
-    #         else:
-    #             self.results[k].append('-')
-    #             self.results[k].append('-')
-
-    # def save(self, path):
-    #     with open(path, 'w') as f:
-    #         for v in self.results.values():
-    #             f.write('|'.join(v) + '\n')
+    def save_gold_data(self):
+        with open(self.index + '.gold' + '.csv', 'w') as f:
+            for v in self.results.values():
+                f.write('|'.join(v) + '\n')
